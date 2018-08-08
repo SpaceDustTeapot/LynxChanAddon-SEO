@@ -6,3 +6,5 @@ Anything before the first comma will be used as the board uri and anything after
 The following
   b  ,  a description
 will result in the exact same effect as the former example.
+
+It is also mandatory to set the site domain. Create a file called 'domain' on the dont-reload directory and write the url domain there.

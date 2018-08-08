@@ -1,12 +1,20 @@
 'use strict';
 
 var fs = require('fs');
+var db = require('../../db');
+var threads = db.threads();
 var templateHandler = require('../../engine/templateHandler');
 var domManipulator = require('../../engine/domManipulator');
+var jit = require('../../engine/jitCacheOps');
+var cache = require('../../engine/cacheHandler');
 var common = domManipulator.common;
 var imageTagContent;
+var locks = {};
+var cacheIndex = {};
+var caches = {};
 
 var boardDescriptions = {};
+var domain = fs.readFileSync(__dirname + '/dont-reload/domain', 'utf8').trim();
 
 try {
   var readContent = fs.readFileSync(__dirname + '/dont-reload/descriptions',
@@ -71,7 +79,169 @@ exports.setThread = function(thread, toRet) {
 
 };
 
+exports.getThreadEntry = function(boardUri, threadData) {
+
+  var toRet = '<url><loc>' + domain + '/' + boardUri + '/res/';
+  toRet += threadData.threadId + '.html</loc><lastmod>';
+  toRet += threadData.lastBump.toISOString().substring(0, 10);
+  toRet += '</lastmod><changefreq>hourly</changefreq></url>';
+
+  return toRet;
+
+};
+
+exports.generateBoardMap = function(lockData, callback) {
+
+  threads.find({
+    boardUri : lockData.boardUri
+  }, {
+    projection : {
+      threadId : 1,
+      lastBump : 1,
+      _id : 0
+    }
+  }).toArray(function gotThreads(error, foundThreads) {
+
+    if (error) {
+      callback(error);
+    } else {
+
+      var children = '';
+
+      for (var i = 0; i < foundThreads.length; i++) {
+
+        var thread = foundThreads[i];
+
+        children += exports.getThreadEntry(lockData.boardUri, thread);
+
+      }
+
+      // TODO
+      var content = '<?xml version="1.0" encoding="UTF-8" ?>';
+      content += '<urlset xmlns="http://www.sitemaps.org/schemas/';
+      content += 'sitemap/0.9">';
+      content += children + '</urlset> ';
+
+      var path = '/' + lockData.boardUri + '/sitemap.xml';
+
+      cache.writeData(content, path, 'text/xml', {
+        boardUri : lockData.boardUri,
+        type : 'sitemap'
+      }, callback);
+
+    }
+
+  });
+
+};
+
+exports.initCacheHandling = function() {
+
+  var originalReceiveGetLock = cache.receiveGetLock;
+
+  cache.receiveGetLock = function(task, socket) {
+
+    var lockData = task.lockData;
+
+    if (lockData.type === 'sitemap') {
+      cache.returnLock(task, lockData.boardUri, locks, socket);
+    } else {
+      originalReceiveGetLock(task, socket);
+    }
+
+  };
+
+  var originalDeleteLock = cache.deleteLock;
+
+  cache.deleteLock = function(task) {
+
+    var lockData = task.lockData;
+
+    if (lockData.type === 'sitemap') {
+      delete locks[lockData.boardUri];
+    } else {
+      originalDeleteLock(task);
+    }
+
+  };
+
+  var originalGetInfoToClear = cache.getInfoToClear;
+
+  cache.getInfoToClear = function(task) {
+
+    if (task.cacheType === 'sitemap') {
+
+      var caches = cacheIndex[task.boardUri];
+
+      if (!caches) {
+        return;
+      }
+
+      return {
+        object : cacheIndex,
+        indexKey : task.boardUri
+      };
+
+    } else {
+      return originalGetInfoToClear(task);
+    }
+
+  };
+
+  var originalPlaceIndex = cache.placeIndex;
+
+  cache.placeIndex = function(task) {
+
+    if (task.meta.type === 'sitemap') {
+      cache.pushIndex(cacheIndex, task.meta.boardUri, task.dest);
+    } else {
+      originalPlaceIndex(task);
+    }
+
+  };
+
+};
+
+exports.initJitHandling = function() {
+
+  var originalGenerateCache = jit.generateCache;
+
+  jit.generateCache = function(lockData, callback) {
+
+    if (lockData.type === 'sitemap') {
+      exports.generateBoardMap(lockData, callback);
+    } else {
+      originalGenerateCache(lockData, callback);
+    }
+
+  };
+
+  var originalGetBoardLock = jit.getBoardLock;
+
+  jit.getBoardLock = function(parts) {
+
+    var toRet = originalGetBoardLock(parts);
+
+    if (toRet) {
+      return toRet;
+    }
+
+    if (parts.length === 3 && parts[2] === 'sitemap.xml') {
+      return {
+        boardUri : parts[1],
+        type : 'sitemap'
+      };
+    }
+
+  };
+
+};
+
 exports.init = function() {
+
+  exports.initJitHandling();
+
+  exports.initCacheHandling();
 
   common.setUploadLinks = function(cell, file) {
 
