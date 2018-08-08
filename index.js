@@ -4,6 +4,7 @@ var fs = require('fs');
 var templateHandler = require('../../engine/templateHandler');
 var domManipulator = require('../../engine/domManipulator');
 var common = domManipulator.common;
+var imageTagContent;
 
 var boardDescriptions = {};
 
@@ -45,7 +46,61 @@ exports.addMeta = function(content, key, keyValue, document) {
 
 };
 
+exports.setThread = function(thread, toRet) {
+
+  if (thread.files && thread.files.length) {
+    toRet = toRet.replace('__metaImage_location__', imageTagContent);
+
+    toRet = toRet.replace('__metaImage_value__', thread.files[0].thumb);
+
+  } else {
+    toRet = toRet.replace('__metaImage_location__', '');
+  }
+
+  var title;
+  var description = common.clean(thread.message.substring(0, 128));
+
+  if (thread.subject) {
+    title = common.clean(thread.subject);
+  } else {
+    title = description;
+  }
+
+  toRet = toRet.replace('__metaTitle_value__', title);
+  return toRet.replace('__metaDescription_value__', description);
+
+};
+
 exports.init = function() {
+
+  common.setUploadLinks = function(cell, file) {
+
+    cell = cell.replace('__imgLink_href__', file.path);
+    cell = cell.replace('__imgLink_mime__', file.mime);
+
+    if (file.width) {
+      cell = cell.replace('__imgLink_width__', file.width);
+      cell = cell.replace('__imgLink_height__', file.height);
+    } else {
+      cell = cell.replace('data-filewidth="__imgLink_width__"', '');
+      cell = cell.replace('data-fileheight="__imgLink_height__"', '');
+    }
+
+    cell = cell.replace('__nameLink_href__', file.path);
+
+    var originalName = common.clean(file.originalName);
+
+    var img = '<img src="' + file.thumb + '" title="' + originalName + '">';
+
+    cell = cell.replace('__imgLink_children__', img);
+
+    cell = cell.replace('__originalNameLink_inner__', originalName);
+    cell = cell.replace('__originalNameLink_download__', originalName);
+    cell = cell.replace('__originalNameLink_href__', file.path);
+
+    return cell;
+
+  };
 
   var originalCheck = templateHandler.checkMainChildren;
 
@@ -55,6 +110,24 @@ exports.init = function() {
       exports.addMeta('__metaTitle_value__', 'property', 'og:title', document);
       exports.addMeta('__metaDescription_value__', 'property',
           'og:description', document);
+    }
+
+    if (page.template === 'threadPage') {
+      var headTag = document.getElementsByTagName('head')[0];
+
+      var metaTag = document.createElement('meta');
+      metaTag.setAttribute('property', 'og:image');
+      metaTag.setAttribute('content', '__metaImage_value__');
+
+      headTag.appendChild(metaTag);
+
+      var textNode = document.createTextNode('__metaImage_location__');
+
+      metaTag.parentNode.insertBefore(textNode, metaTag);
+
+      imageTagContent = metaTag.outerHTML;
+      metaTag.remove();
+
     }
 
     return originalCheck(page, document);
@@ -74,25 +147,11 @@ exports.init = function() {
       var cleanedDescription = common.clean(boardDescriptions[bData.boardUri]);
       cleanedDescription = cleanedDescription || bData.boardDescription;
 
-      toRet = toRet.replace('__metaDescription_value__', cleanedDescription);
+      return toRet.replace('__metaDescription_value__', cleanedDescription);
 
     } else {
-
-      var title;
-      var description = common.clean(thread.message.substring(0, 128));
-
-      if (thread.subject) {
-        title = common.clean(thread.subject);
-      } else {
-        title = description;
-      }
-
-      toRet = toRet.replace('__metaTitle_value__', title);
-      toRet = toRet.replace('__metaDescription_value__', description);
-
+      return exports.setThread(thread, toRet);
     }
-
-    return toRet;
 
   };
 
