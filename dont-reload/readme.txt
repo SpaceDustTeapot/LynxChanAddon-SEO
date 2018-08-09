@@ -8,3 +8,6 @@ The following
 will result in the exact same effect as the former example.
 
 It is also mandatory to set the site domain. Create a file called 'domain' on the dont-reload directory and write the url domain there.
+
+Each board will have it's own sitemap on /boardUri/sitemap.xml. It is up to you to create the main sitemap listing the desired sitemaps. 
+These board sitemaps will be updated once a new thread on the board is made.
