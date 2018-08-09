@@ -2,6 +2,8 @@
 
 var fs = require('fs');
 var db = require('../../db');
+var taskListener = require('../../taskListener');
+var posting = require('../../engine/postingOps').thread;
 var threads = db.threads();
 var templateHandler = require('../../engine/templateHandler');
 var domManipulator = require('../../engine/domManipulator');
@@ -242,6 +244,30 @@ exports.init = function() {
   exports.initJitHandling();
 
   exports.initCacheHandling();
+
+  var originalThreadCreation = posting.finishThreadCreation;
+
+  posting.finishThreadCreation = function(boardData, threadId, enabledCaptcha,
+      callback, thread) {
+
+    taskListener.sendToSocket(null, {
+      cacheType : 'sitemap',
+      boardUri : boardData.boardUri,
+      type : 'cacheClear'
+    }, function sentMessage(error) {
+
+      if (error) {
+        callback(error);
+      } else {
+
+        originalThreadCreation(boardData, threadId, enabledCaptcha, callback,
+            thread);
+
+      }
+
+    });
+
+  };
 
   common.setUploadLinks = function(cell, file) {
 
