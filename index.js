@@ -22,7 +22,7 @@ try {
   var readContent = fs.readFileSync(__dirname + '/dont-reload/descriptions',
       'utf8');
 
-  var lines = readContent.split('/n');
+  var lines = readContent.split('\n');
 
   for (var i = 0; i < lines.length; i++) {
 
