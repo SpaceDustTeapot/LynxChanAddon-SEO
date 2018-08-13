@@ -307,6 +307,9 @@ exports.init = function() {
       exports.addMeta('__metaTitle_value__', 'property', 'og:title', document);
       exports.addMeta('__metaDescription_value__', 'property',
           'og:description', document);
+      exports.addMeta('__metaDescription_value__', 'name',
+          'description', document);
+
     }
 
     if (page.template === 'threadPage') {
