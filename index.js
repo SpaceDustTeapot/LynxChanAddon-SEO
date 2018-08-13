@@ -78,7 +78,7 @@ exports.setThread = function(thread, toRet) {
   }
 
   toRet = toRet.replace('__metaTitle_value__', title);
-  return toRet.replace('__metaDescription_value__', description);
+  return toRet.replace('/__metaDescription_value__/g', description);
 
 };
 
@@ -307,8 +307,7 @@ exports.init = function() {
       exports.addMeta('__metaTitle_value__', 'property', 'og:title', document);
       exports.addMeta('__metaDescription_value__', 'property',
           'og:description', document);
-      exports.addMeta('__metaDescription_value__', 'name',
-          'description', document);
+      exports.addMeta('__rmetaDescription_value__', 'name','description', document);
 
     }
 
@@ -347,7 +346,17 @@ exports.init = function() {
       var cleanedDescription = common.clean(boardDescriptions[bData.boardUri]);
       cleanedDescription = cleanedDescription || bData.boardDescription;
 
-      return toRet.replace('__metaDescription_value__', cleanedDescription);
+	  //HAve to hack arround because replacement's being a mong 
+	 // var tagLeng = document.getElementsByTagName('meta').length;
+	//  for(var i=0; i<tagLeng;i++)
+	//  {
+	//	if('description' == document.getElementsByTagName('meta')[i].attribute('name'))
+	//	{
+		//	 cleanedDescription = document.getElementsByTagName('meta')[i].attribute('content');
+	//	}
+	 // }
+
+      return toRet.replace('/__metaDescription_value__/g', cleanedDescription);
 
     } else {
       return exports.setThread(thread, toRet);
