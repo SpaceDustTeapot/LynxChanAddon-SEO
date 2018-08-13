@@ -61,7 +61,8 @@ exports.setThread = function(thread, toRet) {
   if (thread.files && thread.files.length) {
     toRet = toRet.replace('__metaImage_location__', imageTagContent);
 
-    toRet = toRet.replace('__metaImage_value__', thread.files[0].thumb);
+    var imagePath = domain + thread.files[0].thumb;
+    toRet = toRet.replace('__metaImage_value__', imagePath);
 
   } else {
     toRet = toRet.replace('__metaImage_location__', '');
