@@ -78,7 +78,8 @@ exports.setThread = function(thread, toRet) {
   }
 
   toRet = toRet.replace('__metaTitle_value__', title);
-  return toRet.replace('/__metaDescription_value__/g', description);
+  toRet = toRet.replace('__rmetaDescription_value__', description);
+  return toRet.replace('__metaDescription_value__', description);
 
 };
 
@@ -346,17 +347,9 @@ exports.init = function() {
       var cleanedDescription = common.clean(boardDescriptions[bData.boardUri]);
       cleanedDescription = cleanedDescription || bData.boardDescription;
 
-	  //HAve to hack arround because replacement's being a mong 
-	 // var tagLeng = document.getElementsByTagName('meta').length;
-	//  for(var i=0; i<tagLeng;i++)
-	//  {
-	//	if('description' == document.getElementsByTagName('meta')[i].attribute('name'))
-	//	{
-		//	 cleanedDescription = document.getElementsByTagName('meta')[i].attribute('content');
-	//	}
-	 // }
+	  toRet = toRet.replace('__rmetaDescription_value__', cleanedDescription);
 
-      return toRet.replace('/__metaDescription_value__/g', cleanedDescription);
+      return toRet.replace('__metaDescription_value__', cleanedDescription);
 
     } else {
       return exports.setThread(thread, toRet);
