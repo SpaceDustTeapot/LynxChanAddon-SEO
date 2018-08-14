@@ -63,6 +63,7 @@ exports.setThread = function(thread, toRet) {
 
     var imagePath = domain + thread.files[0].thumb;
     toRet = toRet.replace('__metaImage_value__', imagePath);
+    toRet = toRet.replace('__twitImage_value__', imagePath);
 
   } else {
     toRet = toRet.replace('__metaImage_location__', '');
@@ -334,7 +335,13 @@ exports.init = function() {
       metaTag.setAttribute('property', 'og:image');
       metaTag.setAttribute('content', '__metaImage_value__');
 
+
+	  var twitTag = document.createElement('meta');
+      twitTag.setAttribute('name', 'twitter:image');
+      twitTag.setAttribute('content', '__twitImage_value__');
+
       headTag.appendChild(metaTag);
+      headTag.appendChild(twitTag);
 
       var textNode = document.createTextNode('__metaImage_location__');
 
