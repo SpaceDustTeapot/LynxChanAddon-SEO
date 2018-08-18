@@ -63,6 +63,7 @@ exports.setThread = function(thread, toRet) {
 
     var imagePath = domain + thread.files[0].thumb;
     toRet = toRet.replace('__metaImage_value__', imagePath);
+    toRet = toRet.replace('__twitImage_value__', imagePath);
 
   } else {
     toRet = toRet.replace('__metaImage_location__', '');
@@ -79,6 +80,11 @@ exports.setThread = function(thread, toRet) {
 
   toRet = toRet.replace('__metaTitle_value__', title);
   toRet = toRet.replace('__rmetaDescription_value__', description);
+
+  //twitter stuff
+  toRet = toRet.replace('__twitter_title__', title);
+  toRet = toRet.replace('__twitter_desc__', description);
+
   return toRet.replace('__metaDescription_value__', description);
 
 };
@@ -310,6 +316,16 @@ exports.init = function() {
           'og:description', document);
       exports.addMeta('__rmetaDescription_value__', 'name','description', document);
 
+      //twitter stuff
+      exports.addMeta('summary_large_image', 'name','twitter:card', document);
+      exports.addMeta('__twitter_title__', 'name','twitter:title', document);
+      exports.addMeta('__twitter_desc__', 'name','twiter:description', document);
+      //exports.addMeta('__rmetaDescription_value__', 'name','description', document);
+
+
+
+
+      
     }
 
     if (page.template === 'threadPage') {
@@ -319,7 +335,13 @@ exports.init = function() {
       metaTag.setAttribute('property', 'og:image');
       metaTag.setAttribute('content', '__metaImage_value__');
 
+
+	  var twitTag = document.createElement('meta');
+      twitTag.setAttribute('name', 'twitter:image');
+      twitTag.setAttribute('content', '__twitImage_value__');
+
       headTag.appendChild(metaTag);
+      headTag.appendChild(twitTag);
 
       var textNode = document.createTextNode('__metaImage_location__');
 
@@ -343,11 +365,13 @@ exports.init = function() {
     if (!thread) {
 
       toRet = toRet.replace('__metaTitle_value__', bData.boardName);
+      toRet = toRet.replace('__twitter_title__', bData.boardName);
 
       var cleanedDescription = common.clean(boardDescriptions[bData.boardUri]);
       cleanedDescription = cleanedDescription || bData.boardDescription;
 
-	  toRet = toRet.replace('__rmetaDescription_value__', cleanedDescription);
+      toRet = toRet.replace('__rmetaDescription_value__', cleanedDescription);
+      toRet = toRet.replace('__twitter_desc__', cleanedDescription);
 
       return toRet.replace('__metaDescription_value__', cleanedDescription);
 
